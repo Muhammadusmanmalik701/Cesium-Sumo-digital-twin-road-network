@@ -16,8 +16,6 @@
             width: 260px; background: rgba(0,0,0,0.92); padding: 18px;
             border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.7);
         }
-
-        /* Smart Compact Bottom Dashboard */
         .bottom-panel {
             position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
             height: 245px; background: rgba(0,0,0,0.95); 
@@ -25,18 +23,11 @@
             padding: 12px 15px; display: flex; gap: 15px; overflow-x: auto;
         }
         .dash-card {
-            background: rgba(255,255,255,0.08); 
-            padding: 12px; border-radius: 10px; min-width: 210px;
+            background: rgba(255,255,255,0.08); padding: 12px; border-radius: 10px; min-width: 210px;
         }
-        .kpi-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
-        }
-        .kpi-item {
-            text-align: center; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 6px;
-        }
-        .kpi-value { font-size: 18px; font-weight: bold; }
-        .kpi-label { font-size: 11px; opacity: 0.75; }
-
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .kpi-item { text-align: center; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 6px; }
+        .kpi-value { font-size: 18px; font-weight: bold; color: #4ade80; }
         h4 { color: #f87171; margin-bottom: 8px; font-size: 15px; }
     </style>
 </head>
@@ -61,65 +52,39 @@
         <button id="resetBtn">↺ Reset</button>
     </div>
 
-    <!-- Smart Bottom Dashboard -->
+    <!-- Bottom Smart Dashboard -->
     <div class="bottom-panel">
-
-        <!-- 1. Live KPIs -->
         <div class="dash-card">
             <h4>📊 Live Traffic</h4>
             <div class="kpi-grid">
-                <div class="kpi-item"><div class="kpi-value" id="totalV">463</div><div class="kpi-label">Vehicles</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="avgS">36.4</div><div class="kpi-label">Avg Speed</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="cong">58%</div><div class="kpi-label">Congestion</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="delay">9.8</div><div class="kpi-label">Delay (min)</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="totalV">463</div><div>Vehicles</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="avgS">36.4</div><div>Avg Speed</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="cong">58%</div><div>Congestion</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="delay">9.8</div><div>Delay (min)</div></div>
             </div>
         </div>
 
-        <!-- 2. Weather -->
         <div class="dash-card">
-            <h4>🌤️ Weather (Bordeaux)</h4>
+            <h4>🌤️ Weather</h4>
             <div class="kpi-grid">
-                <div class="kpi-item"><div class="kpi-value" id="temp">17.2°</div><div class="kpi-label">Temperature</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="humid">64%</div><div class="kpi-label">Humidity</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="wind">12</div><div class="kpi-label">Wind (km/h)</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="cond">☀️ Clear</div><div class="kpi-label">Condition</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="temp">17.2°</div><div>Temp</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="humid">64%</div><div>Humidity</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="wind">12</div><div>Wind</div></div>
             </div>
         </div>
 
-        <!-- 3. Environment -->
         <div class="dash-card">
-            <h4>🌍 Environment</h4>
-            <div class="kpi-grid">
-                <div class="kpi-item"><div class="kpi-value" id="co2">248</div><div class="kpi-label">CO₂ (kg)</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="noise">67</div><div class="kpi-label">Noise (dB)</div></div>
-            </div>
-        </div>
-
-        <!-- 4. Top Congested -->
-        <div class="dash-card">
-            <h4>🔴 Hotspots</h4>
-            <ol id="hotspots" style="font-size:13.5px; line-height:1.7;">
-                <li>Rue de la République — 8.2 min</li>
-                <li>Avenue Pasteur — 6.7 min</li>
-                <li>Boulevard Gambetta — 4.9 min</li>
-            </ol>
-        </div>
-
-        <!-- 5. Charts -->
-        <div class="dash-card" style="min-width: 280px;">
             <h4>📈 Speed Trend</h4>
             <canvas id="speedChart" height="95"></canvas>
         </div>
 
-        <div class="dash-card" style="min-width: 220px;">
+        <div class="dash-card">
             <h4>🚗 Vehicle Mix</h4>
             <canvas id="vehicleChart" height="95"></canvas>
         </div>
-
     </div>
 
     <script>
-        // Cesium + Road Code (same as previous working version)
         Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwYWRiYmQ5OC0yODM2LTRlZDktOTdiYi1jOTVhZDFjYzAwNjMiLCJpZCI6NDI3MjQ2LCJpc3MiOiJodHRwczovL2lvbi5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3Nzc5Mzg1MTN9.PfvUbwHuaBGd2FxCn_BRv8OPH0-2umfLKXH_F9D686k';
 
         let viewer;
@@ -164,39 +129,103 @@
             new Chart(document.getElementById('vehicleChart'), {
                 type: 'pie',
                 data: { labels: ['Car','Bus','Truck','Bike'], datasets: [{ data: [67,16,10,7], backgroundColor: ['#60a5fa','#34d399','#fbbf24','#c084fc'] }] },
-                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: {size: 11}, color: '#ddd' }}}}
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#ddd', font: {size: 11}}}}}
             });
         }
 
         function simulateLiveData() {
             setInterval(() => {
-                document.getElementById('totalV').textContent = Math.floor(380 + Math.random()*150);
+                document.getElementById('totalV').textContent = Math.floor(380 + Math.random()*180);
                 document.getElementById('avgS').textContent = (29 + Math.random()*18).toFixed(1);
                 document.getElementById('cong').textContent = Math.floor(45 + Math.random()*45) + "%";
             }, 2500);
         }
 
+        // ==================== MAIN ROAD LOADING FUNCTION ====================
         async function loadSelectedArea() {
-            // ... (road loading code same as previous message - sharp colors wala)
             const areaName = document.getElementById('areaSelect').value;
-            if (!areaName) return;
+            if (!areaName || !viewer) return;
 
             // Clear old roads
-            currentRoadEntities.forEach(e => viewer.entities.remove(e));
+            currentRoadEntities.forEach(entity => viewer.entities.remove(entity));
             currentRoadEntities = [];
 
             const center = areaCenters[areaName];
 
+            // Camera move
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.height),
                 orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45) },
                 duration: 2.5
             });
 
-            // Road loading code (sharp colors) yahan paste kar sakte ho previous message se
-            console.log(areaName + " loaded");
+            const query = `[out:json][timeout:90];
+                area["name"="${areaName}"]["admin_level"=8]->.searchArea;
+                (way["highway"](area.searchArea); way["railway"="tram"](area.searchArea); way["railway"="rail"](area.searchArea););
+                out geom;`;
+
+            try {
+                const res = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: query,
+                    headers: { 'Content-Type': 'text/plain' }
+                });
+                const data = await res.json();
+
+                data.elements.forEach(el => {
+                    if (el.type !== "way" || !el.geometry || el.geometry.length < 2) return;
+
+                    const positions = el.geometry.map(g => Cesium.Cartesian3.fromDegrees(g.lon, g.lat, 8));
+
+                    const highway = el.tags?.highway || "";
+                    const railway = el.tags?.railway;
+
+                    let color, width = 5.5;
+
+                    if (railway === "tram") {
+                        color = Cesium.Color.fromCssColorString('#c026d3'); // Bright Magenta
+                        width = 10;
+                    } else if (railway === "rail") {
+                        color = Cesium.Color.fromCssColorString('#1e40af'); // Deep Blue
+                        width = 8;
+                    } else if (["motorway","trunk"].includes(highway)) {
+                        color = Cesium.Color.fromCssColorString('#ef4444'); // Bright Red
+                        width = 13;
+                    } else if (["primary"].includes(highway)) {
+                        color = Cesium.Color.fromCssColorString('#f97316'); // Orange-Red
+                        width = 11;
+                    } else if (["secondary","tertiary"].includes(highway)) {
+                        color = Cesium.Color.fromCssColorString('#eab308'); // Bright Yellow-Orange
+                        width = 8.5;
+                    } else {
+                        color = Cesium.Color.fromCssColorString('#94a3b8'); // Slate Gray
+                        width = 5;
+                    }
+
+                    const road = viewer.entities.add({
+                        polyline: {
+                            positions: positions,
+                            width: width,
+                            material: new Cesium.PolylineGlowMaterialProperty({
+                                color: color,
+                                glowPower: 0.35
+                            }),
+                            clampToGround: true
+                        }
+                    });
+
+                    currentRoadEntities.push(road);
+                });
+
+                console.log(`${areaName} - Roads Loaded Successfully`);
+
+            } catch (err) {
+                console.error(err);
+                alert("Roads load nahi ho rahi. Internet check karo.");
+            }
         }
 
+        // Start Application
         initCesium();
     </script>
 </body>
