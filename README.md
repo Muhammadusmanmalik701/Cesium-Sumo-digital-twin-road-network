@@ -2,7 +2,7 @@
 
 **A Real-time 3D Road Network Digital Twin** using **Cesium.js** and **SUMO (Simulation of Urban MObility)**.
 
-[![Project Preview]((https://muhammadusmanmalik701.github.io/Cesium-Sumo-digital-twin-road-network/))]
+[![Project Preview](https://muhammadusmanmalik701.github.io/Cesium-Sumo-digital-twin-road-network/)]
 
 ---
 
