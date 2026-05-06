@@ -23,6 +23,11 @@
             background: rgba(0,0,0,0.85); color: white; padding: 15px;
             border-radius: 10px; font-size: 14px; line-height: 1.8;
         }
+        .status {
+            position: absolute; top: 80px; left: 15px; z-index: 1000;
+            background: rgba(0,0,0,0.7); color: #0f0; padding: 8px 12px;
+            border-radius: 6px; font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -49,37 +54,45 @@
         ⚫ Railways
     </div>
 
+    <div class="status" id="status">Loading 3D World...</div>
+
     <script>
-        Cesium.Ion.defaultAccessToken = null;   // Token issue avoid kiya
+        Cesium.Ion.defaultAccessToken = null;
 
         let viewer;
 
         async function initCesium() {
-            viewer = new Cesium.Viewer('cesiumContainer', {
-                terrainProvider: Cesium.Terrain.fromWorldTerrain(),
-                imageryProvider: new Cesium.OpenStreetMapImageryProvider(),
-                baseLayerPicker: false,
-                geocoder: false,
-                homeButton: true,
-                sceneModePicker: true,
-                navigationHelpButton: false
-            });
-
-            // 3D Buildings
             try {
+                viewer = new Cesium.Viewer('cesiumContainer', {
+                    terrainProvider: Cesium.Terrain.fromWorldTerrain({ requestWaterMask: false }),
+                    imageryProvider: new Cesium.OpenStreetMapImageryProvider(),
+                    baseLayerPicker: false,
+                    geocoder: false,
+                    homeButton: true,
+                    sceneModePicker: true,
+                    navigationHelpButton: false,
+                    fullscreenButton: false
+                });
+
+                // 3D Buildings
                 const buildings = await Cesium.createOsmBuildingsAsync();
                 viewer.scene.primitives.add(buildings);
-            } catch(e) { console.log("Buildings skipped"); }
 
-            loadSelectedArea();
+                document.getElementById('status').style.display = 'none';
+                loadSelectedArea();
+            } catch(e) {
+                console.error(e);
+                document.getElementById('status').innerHTML = 'Error loading terrain. Refresh karo.';
+                document.getElementById('status').style.color = '#ff0';
+            }
         }
 
         const areaCenters = {
-            "Pessac": { lon: -0.615, lat: 44.806, height: 1200 },
-            "Talence": { lon: -0.589, lat: 44.808, height: 1200 },
-            "Mérignac": { lon: -0.685, lat: 44.833, height: 1200 },
-            "Bordeaux": { lon: -0.579, lat: 44.837, height: 1200 },
-            "Gradignan": { lon: -0.616, lat: 44.772, height: 1200 }
+            "Pessac": { lon: -0.615, lat: 44.806, height: 1500 },
+            "Talence": { lon: -0.589, lat: 44.808, height: 1500 },
+            "Mérignac": { lon: -0.685, lat: 44.833, height: 1500 },
+            "Bordeaux": { lon: -0.579, lat: 44.837, height: 1500 },
+            "Gradignan": { lon: -0.616, lat: 44.772, height: 1500 }
         };
 
         async function loadSelectedArea() {
@@ -90,17 +103,12 @@
 
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.height),
-                duration: 2.5
+                duration: 2
             });
 
             viewer.entities.removeAll();
 
-            const query = `
-                [out:json][timeout:90];
-                area["name"="${areaName}"]["admin_level"=8]->.searchArea;
-                (way["highway"](area.searchArea); way["railway"="tram"](area.searchArea); way["railway"="rail"](area.searchArea););
-                out geom;
-            `;
+            const query = `[out:json][timeout:60];area["name"="${areaName}"]["admin_level"=8]->.searchArea;(way["highway"](area.searchArea);way["railway"="tram"](area.searchArea);way["railway"="rail"](area.searchArea););out geom;`;
 
             try {
                 const res = await fetch('https://overpass-api.de/api/interpreter', {
@@ -113,7 +121,7 @@
                 let major=0, secondary=0, local=0, tram=0, rail=0;
 
                 data.elements.forEach(el => {
-                    if (el.type !== "way" || !el.geometry || el.geometry.length < 2) return;
+                    if (el.type !== "way" || !el.geometry?.length) return;
 
                     const positions = el.geometry.map(g => Cesium.Cartesian3.fromDegrees(g.lon, g.lat, 8));
 
@@ -147,7 +155,8 @@
             }
         }
 
-        initCesium();
+        // Start
+        window.onload = initCesium;
     </script>
 </body>
 </html>
