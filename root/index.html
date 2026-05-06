@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>3D Road Network Digital Twin</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Cesium.js"></script>
+    <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Widgets/widgets.css" />
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        #cesiumContainer { width: 100vw; height: 100vh; }
+        .control-panel {
+            position: absolute; top: 15px; left: 15px; z-index: 1000;
+            background: rgba(0,0,0,0.85); color: white; padding: 20px 25px;
+            border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);
+            min-width: 280px;
+        }
+        select { 
+            padding: 12px; font-size: 16px; border-radius: 8px; 
+            background: #333; color: white; border: none; width: 100%; margin-top: 10px; 
+        }
+        .legend {
+            position: absolute; bottom: 20px; right: 20px; z-index: 1000;
+            background: rgba(0,0,0,0.85); color: white; padding: 15px;
+            border-radius: 10px; font-size: 14px; line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    
+    <div class="control-panel">
+        <h3>🚦 3D Road Network Digital Twin</h3>
+        <label>Area Select karo:</label><br>
+        <select id="areaSelect" onchange="loadSelectedArea()">
+            <option value="Pessac">Pessac</option>
+            <option value="Talence">Talence</option>
+            <option value="Mérignac">Mérignac</option>
+            <option value="Bordeaux">Bordeaux City</option>
+            <option value="Gradignan">Gradignan</option>
+        </select>
+    </div>
+
+    <div class="legend" id="legend">
+        <strong>Legend:</strong><br>
+        🔴 Major Highways<br>
+        🟠 Secondary Roads<br>
+        ⚫ Local Streets<br>
+        🟣 Tram Lines<br>
+        ⚫ Railways
+    </div>
+
+    <script>
+        Cesium.Ion.defaultAccessToken = null;   // Token issue avoid kiya
+
+        let viewer;
+
+        async function initCesium() {
+            viewer = new Cesium.Viewer('cesiumContainer', {
+                terrainProvider: Cesium.Terrain.fromWorldTerrain(),
+                imageryProvider: new Cesium.OpenStreetMapImageryProvider(),
+                baseLayerPicker: false,
+                geocoder: false,
+                homeButton: true,
+                sceneModePicker: true,
+                navigationHelpButton: false
+            });
+
+            // 3D Buildings
+            try {
+                const buildings = await Cesium.createOsmBuildingsAsync();
+                viewer.scene.primitives.add(buildings);
+            } catch(e) { console.log("Buildings skipped"); }
+
+            loadSelectedArea();
+        }
+
+        const areaCenters = {
+            "Pessac": { lon: -0.615, lat: 44.806, height: 1200 },
+            "Talence": { lon: -0.589, lat: 44.808, height: 1200 },
+            "Mérignac": { lon: -0.685, lat: 44.833, height: 1200 },
+            "Bordeaux": { lon: -0.579, lat: 44.837, height: 1200 },
+            "Gradignan": { lon: -0.616, lat: 44.772, height: 1200 }
+        };
+
+        async function loadSelectedArea() {
+            if (!viewer) return;
+
+            const areaName = document.getElementById('areaSelect').value;
+            const center = areaCenters[areaName];
+
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.height),
+                duration: 2.5
+            });
+
+            viewer.entities.removeAll();
+
+            const query = `
+                [out:json][timeout:90];
+                area["name"="${areaName}"]["admin_level"=8]->.searchArea;
+                (way["highway"](area.searchArea); way["railway"="tram"](area.searchArea); way["railway"="rail"](area.searchArea););
+                out geom;
+            `;
+
+            try {
+                const res = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: query,
+                    headers: { 'Content-Type': 'text/plain' }
+                });
+                const data = await res.json();
+
+                let major=0, secondary=0, local=0, tram=0, rail=0;
+
+                data.elements.forEach(el => {
+                    if (el.type !== "way" || !el.geometry || el.geometry.length < 2) return;
+
+                    const positions = el.geometry.map(g => Cesium.Cartesian3.fromDegrees(g.lon, g.lat, 8));
+
+                    const highway = el.tags?.highway || "";
+                    const railway = el.tags?.railway;
+
+                    let color, width;
+                    if (railway === "tram")      { color = Cesium.Color.fromCssColorString('#9b59b6'); width = 9; tram++; }
+                    else if (railway === "rail") { color = Cesium.Color.fromCssColorString('#2c3e50'); width = 7; rail++; }
+                    else if (["motorway","trunk","primary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#e74c3c'); width = 11; major++; }
+                    else if (["secondary","tertiary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#f39c12'); width = 8; secondary++; }
+                    else { color = Cesium.Color.fromCssColorString('#7f8c8d'); width = 5.5; local++; }
+
+                    viewer.entities.add({
+                        polyline: {
+                            positions: positions,
+                            width: width,
+                            material: new Cesium.PolylineGlowMaterialProperty({ color: color, glowPower: 0.2 }),
+                            clampToGround: true
+                        }
+                    });
+                });
+
+                document.getElementById('legend').innerHTML = `
+                    <strong>${areaName} 3D Digital Twin</strong><br>
+                    🔴 Major: ${major} | 🟠 Sec: ${secondary} | ⚫ Local: ${local}<br>
+                    🟣 Tram: ${tram} | ⚫ Rail: ${rail}
+                `;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        initCesium();
+    </script>
+</body>
+</html>
