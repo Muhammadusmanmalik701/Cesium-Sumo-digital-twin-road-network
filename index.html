@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Bordeaux Métropole - Advanced Digital Twin</title>
+    <title>Bordeaux Métropole - Smart Digital Twin</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Cesium.js"></script>
     <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Widgets/widgets.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -13,12 +13,12 @@
 
         .left-panel {
             position: absolute; top: 15px; left: 15px; z-index: 10;
-            width: 270px; background: rgba(0,0,0,0.93); padding: 18px;
+            width: 260px; background: rgba(0,0,0,0.92); padding: 18px;
             border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.7);
         }
         .bottom-panel {
             position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
-            height: 255px; background: rgba(0,0,0,0.95); 
+            height: 245px; background: rgba(0,0,0,0.95); 
             border-top: 3px solid #e74c3c;
             padding: 12px 15px; display: flex; gap: 15px; overflow-x: auto;
         }
@@ -26,11 +26,9 @@
             background: rgba(255,255,255,0.08); padding: 12px; border-radius: 10px; min-width: 210px;
         }
         .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-        .kpi-item { text-align: center; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; }
-        .kpi-value { font-size: 19px; font-weight: bold; color: #4ade80; }
+        .kpi-item { text-align: center; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 6px; }
+        .kpi-value { font-size: 18px; font-weight: bold; color: #4ade80; }
         h4 { color: #f87171; margin-bottom: 8px; font-size: 15px; }
-        button { width: 100%; padding: 10px; margin: 4px 0; border: none; background: #374151; color: white; border-radius: 8px; cursor: pointer; }
-        button:hover { background: #e74c3c; }
     </style>
 </head>
 <body>
@@ -38,9 +36,9 @@
 
     <!-- Left Panel -->
     <div class="left-panel">
-        <h3>🚦 Advanced Bordeaux Digital Twin</h3>
+        <h3>🚦 Bordeaux Digital Twin</h3>
         <label>Choose Area:</label><br>
-        <select id="areaSelect" onchange="loadSelectedArea()" style="width:100%; padding:12px; margin:10px 0; background:#1f2937; color:white; border:none; border-radius:8px;">
+        <select id="areaSelect" onchange="loadSelectedArea()" style="width:100%; padding:12px; margin:10px 0; background:#333; color:white; border:none; border-radius:8px;">
             <option value="" selected disabled>-- Select Area --</option>
             <option value="Pessac">Pessac</option>
             <option value="Talence">Talence</option>
@@ -49,12 +47,12 @@
             <option value="Gradignan">Gradignan</option>
         </select>
 
-        <button onclick="toggleNightMode()">🌙 Night Mode</button>
-        <button onclick="toggleRoads()">🛣️ Toggle Roads</button>
-        <button onclick="toggleBuildings()">🏢 Toggle Buildings</button>
+        <button id="playBtn">▶ Play</button>
+        <button id="pauseBtn">⏸ Pause</button>
+        <button id="resetBtn">↺ Reset</button>
     </div>
 
-    <!-- Bottom Dashboard -->
+    <!-- Bottom Smart Dashboard -->
     <div class="bottom-panel">
         <div class="dash-card">
             <h4>📊 Live Traffic</h4>
@@ -89,7 +87,8 @@
     <script>
         Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwYWRiYmQ5OC0yODM2LTRlZDktOTdiYi1jOTVhZDFjYzAwNjMiLCJpZCI6NDI3MjQ2LCJpc3MiOiJodHRwczovL2lvbi5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3Nzc5Mzg1MTN9.PfvUbwHuaBGd2FxCn_BRv8OPH0-2umfLKXH_F9D686k';
 
-        let viewer, currentRoadEntities = [], showRoads = true;
+        let viewer;
+        let currentRoadEntities = [];
 
         const areaCenters = {
             "Pessac": { lon: -0.615, lat: 44.806, height: 1600 },
@@ -103,9 +102,7 @@
             viewer = new Cesium.Viewer('cesiumContainer', {
                 terrainProvider: await Cesium.createWorldTerrainAsync(),
                 requestRenderMode: true,
-                baseLayerPicker: false,
-                skyAtmosphere: true,
-                fog: { enabled: true, density: 0.001 }
+                baseLayerPicker: false
             });
 
             viewer.camera.flyTo({
@@ -113,7 +110,6 @@
                 duration: 3
             });
 
-            // Buildings
             try {
                 const buildings = await Cesium.createOsmBuildingsAsync();
                 viewer.scene.primitives.add(buildings);
@@ -145,18 +141,21 @@
             }, 2500);
         }
 
+        // ==================== MAIN ROAD LOADING FUNCTION ====================
         async function loadSelectedArea() {
             const areaName = document.getElementById('areaSelect').value;
             if (!areaName || !viewer) return;
 
-            currentRoadEntities.forEach(e => viewer.entities.remove(e));
+            // Clear old roads
+            currentRoadEntities.forEach(entity => viewer.entities.remove(entity));
             currentRoadEntities = [];
 
             const center = areaCenters[areaName];
 
+            // Camera move
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.height),
-                orientation: { heading: 0, pitch: Cesium.Math.toRadians(-42) },
+                orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45) },
                 duration: 2.5
             });
 
@@ -167,7 +166,9 @@
 
             try {
                 const res = await fetch('https://overpass-api.de/api/interpreter', {
-                    method: 'POST', body: query, headers: { 'Content-Type': 'text/plain' }
+                    method: 'POST',
+                    body: query,
+                    headers: { 'Content-Type': 'text/plain' }
                 });
                 const data = await res.json();
 
@@ -175,50 +176,56 @@
                     if (el.type !== "way" || !el.geometry || el.geometry.length < 2) return;
 
                     const positions = el.geometry.map(g => Cesium.Cartesian3.fromDegrees(g.lon, g.lat, 8));
+
                     const highway = el.tags?.highway || "";
                     const railway = el.tags?.railway;
-                    const name = el.tags?.name || "Road";
 
                     let color, width = 5.5;
-                    if (railway === "tram") { color = Cesium.Color.fromCssColorString('#c026d3'); width = 11; }
-                    else if (railway === "rail") { color = Cesium.Color.fromCssColorString('#1e40af'); width = 9; }
-                    else if (["motorway","trunk"].includes(highway)) { color = Cesium.Color.fromCssColorString('#ef4444'); width = 14; }
-                    else if (["primary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#f97316'); width = 12; }
-                    else if (["secondary","tertiary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#eab308'); width = 9; }
-                    else { color = Cesium.Color.fromCssColorString('#94a3b8'); width = 5.5; }
 
-                    const roadEntity = viewer.entities.add({
-                        name: name,
+                    if (railway === "tram") {
+                        color = Cesium.Color.fromCssColorString('#c026d3'); // Bright Magenta
+                        width = 10;
+                    } else if (railway === "rail") {
+                        color = Cesium.Color.fromCssColorString('#1e40af'); // Deep Blue
+                        width = 8;
+                    } else if (["motorway","trunk"].includes(highway)) {
+                        color = Cesium.Color.fromCssColorString('#ef4444'); // Bright Red
+                        width = 13;
+                    } else if (["primary"].includes(highway)) {
+                        color = Cesium.Color.fromCssColorString('#f97316'); // Orange-Red
+                        width = 11;
+                    } else if (["secondary","tertiary"].includes(highway)) {
+                        color = Cesium.Color.fromCssColorString('#eab308'); // Bright Yellow-Orange
+                        width = 8.5;
+                    } else {
+                        color = Cesium.Color.fromCssColorString('#94a3b8'); // Slate Gray
+                        width = 5;
+                    }
+
+                    const road = viewer.entities.add({
                         polyline: {
                             positions: positions,
                             width: width,
-                            material: new Cesium.PolylineGlowMaterialProperty({ color: color, glowPower: 0.4 }),
+                            material: new Cesium.PolylineGlowMaterialProperty({
+                                color: color,
+                                glowPower: 0.35
+                            }),
                             clampToGround: true
                         }
                     });
 
-                    currentRoadEntities.push(roadEntity);
+                    currentRoadEntities.push(road);
                 });
+
+                console.log(`${areaName} - Roads Loaded Successfully`);
 
             } catch (err) {
                 console.error(err);
+                alert("Roads load nahi ho rahi. Internet check karo.");
             }
         }
 
-        function toggleNightMode() {
-            alert("Night Mode: Coming in next update (stable version mein lighting issue avoid kiya gaya hai)");
-        }
-
-        function toggleRoads() {
-            showRoads = !showRoads;
-            currentRoadEntities.forEach(e => e.show = showRoads);
-        }
-
-        function toggleBuildings() {
-            alert("Buildings Toggle - Full feature next update mein");
-        }
-
-        // Start
+        // Start Application
         initCesium();
     </script>
 </body>
