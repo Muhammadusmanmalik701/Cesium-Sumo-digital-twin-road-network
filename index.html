@@ -89,7 +89,7 @@
     <script>
         Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwYWRiYmQ5OC0yODM2LTRlZDktOTdiYi1jOTVhZDFjYzAwNjMiLCJpZCI6NDI3MjQ2LCJpc3MiOiJodHRwczovL2lvbi5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3Nzc5Mzg1MTN9.PfvUbwHuaBGd2FxCn_BRv8OPH0-2umfLKXH_F9D686k';
 
-        let viewer, currentRoadEntities = [], showRoads = true, showBuildings = true, nightMode = false;
+        let viewer, currentRoadEntities = [], showRoads = true;
 
         const areaCenters = {
             "Pessac": { lon: -0.615, lat: 44.806, height: 1600 },
@@ -113,6 +113,7 @@
                 duration: 3
             });
 
+            // Buildings
             try {
                 const buildings = await Cesium.createOsmBuildingsAsync();
                 viewer.scene.primitives.add(buildings);
@@ -197,8 +198,6 @@
                     });
 
                     currentRoadEntities.push(roadEntity);
-
-                    roadEntity.description = `<h3>${name}</h3><p><strong>Type:</strong> ${highway || railway || 'Local'}</p>`;
                 });
 
             } catch (err) {
@@ -207,14 +206,7 @@
         }
 
         function toggleNightMode() {
-            nightMode = !nightMode;
-            if (nightMode) {
-                viewer.scene.globe.enableLighting = true;
-                viewer.scene.fog.density = 0.0025;
-            } else {
-                viewer.scene.globe.enableLighting = false;
-                viewer.scene.fog.density = 0.001;
-            }
+            alert("Night Mode: Coming in next update (stable version mein lighting issue avoid kiya gaya hai)");
         }
 
         function toggleRoads() {
@@ -223,9 +215,10 @@
         }
 
         function toggleBuildings() {
-            alert("🏢 Buildings toggle (full implementation coming soon)");
+            alert("Buildings Toggle - Full feature next update mein");
         }
 
+        // Start
         initCesium();
     </script>
 </body>
