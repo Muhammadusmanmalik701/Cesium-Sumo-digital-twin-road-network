@@ -25,7 +25,6 @@
             background: #333; color: white; cursor: pointer; flex: 1;
         }
         button:hover { background: #555; }
-        button.active { background: #e74c3c; }
 
         .speed-control {
             display: flex; align-items: center; gap: 10px; margin: 12px 0;
@@ -48,10 +47,11 @@
     
     <!-- Control Panel -->
     <div class="control-panel">
-        <h3>🚦 Bordeaux Digital Twin - Simulation</h3>
+        <h3>🚦 Bordeaux Métropole Digital Twin</h3>
         
         <label>Choose Area :</label><br>
         <select id="areaSelect" onchange="loadSelectedArea()">
+            <option value="" selected disabled>-- Select Area --</option>
             <option value="Pessac">Pessac</option>
             <option value="Talence">Talence</option>
             <option value="Mérignac">Mérignac</option>
@@ -76,13 +76,7 @@
         </div>
     </div>
 
-    <div class="legend" id="legend" style="position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: rgba(0,0,0,0.85); color: white; padding: 15px; border-radius: 10px; font-size: 14px;">
-        <strong>Legend:</strong><br>
-        🔴 Major Highways<br>
-        🟠 Secondary Roads<br>
-        ⚫ Local Streets<br>
-        🟣 Tram Lines<br>
-        ⚫ Railways
+    <div class="legend" id="legend" style="position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: rgba(0,0,0,0.85); color: white; padding: 15px; border-radius: 10px; font-size: 14px; display: none;">
     </div>
 
     <script>
@@ -111,8 +105,14 @@
                 console.log("Buildings load nahi hue");
             }
 
+            // Default France View (Bordeaux region broad view)
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(-0.58, 44.85, 45000),  // France ka broad view
+                orientation: { heading: 0, pitch: Cesium.Math.toRadians(-35) },
+                duration: 3
+            });
+
             setupSimulationControls();
-            loadSelectedArea();   // Pehli baar load
         }
 
         function setupSimulationControls() {
@@ -125,52 +125,47 @@
 
             playBtn.onclick = () => { isPlaying = true; };
             pauseBtn.onclick = () => { isPlaying = false; };
-            resetBtn.onclick = () => { 
-                simulationStartTime = new Date(); 
-            };
+            resetBtn.onclick = () => { simulationStartTime = new Date(); };
 
-            // Speed Control
             speedSlider.oninput = () => {
                 currentSpeed = parseFloat(speedSlider.value);
                 speedValue.textContent = currentSpeed + "x";
             };
 
-            // Simulation Time Update
             setInterval(() => {
                 if (!isPlaying) return;
-                
                 const elapsed = Math.floor((new Date() - simulationStartTime) * currentSpeed / 1000);
-                const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
-                const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
-                const seconds = (elapsed % 60).toString().padStart(2, '0');
-                
-                simTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+                const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+                const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+                const s = (elapsed % 60).toString().padStart(2, '0');
+                simTimeEl.textContent = `${h}:${m}:${s}`;
             }, 200);
         }
 
-        // ================== Aapka Purana Code Yahan Se ==================
+        // ================== Area Data ==================
         const areaCenters = {
-            "Pessac": { lon: -0.615, lat: 44.806, height: 800 },
-            "Talence": { lon: -0.589, lat: 44.808, height: 800 },
-            "Mérignac": { lon: -0.685, lat: 44.833, height: 800 },
-            "Bordeaux": { lon: -0.579, lat: 44.837, height: 800 },
-            "Gradignan": { lon: -0.616, lat: 44.772, height: 800 }
+            "Pessac": { lon: -0.615, lat: 44.806, height: 1200 },
+            "Talence": { lon: -0.589, lat: 44.808, height: 1200 },
+            "Mérignac": { lon: -0.685, lat: 44.833, height: 1200 },
+            "Bordeaux": { lon: -0.579, lat: 44.837, height: 1200 },
+            "Gradignan": { lon: -0.616, lat: 44.772, height: 1200 }
         };
 
         async function loadSelectedArea() {
-            if (!viewer) return;
-
             const areaName = document.getElementById('areaSelect').value;
+            if (!areaName || !viewer) return;
+
             const center = areaCenters[areaName];
 
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.height),
                 orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-45), roll: 0 },
-                duration: 2
+                duration: 2.5
             });
 
             viewer.entities.removeAll();
 
+            // Roads loading query
             const query = `[out:json][timeout:90];
                 area["name"="${areaName}"]["admin_level"=8]->.searchArea;
                 (way["highway"](area.searchArea); way["railway"="tram"](area.searchArea); way["railway"="rail"](area.searchArea););
@@ -192,7 +187,7 @@
                     const railway = el.tags?.railway;
 
                     let color, width;
-                    if (railway === "tram") { color = Cesium.Color.fromCssColorString('#9b59b6'); width = 9; tram++; }
+                    if (railway === "tram")      { color = Cesium.Color.fromCssColorString('#9b59b6'); width = 9; tram++; }
                     else if (railway === "rail") { color = Cesium.Color.fromCssColorString('#2c3e50'); width = 7; rail++; }
                     else if (["motorway","trunk","primary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#e74c3c'); width = 11; major++; }
                     else if (["secondary","tertiary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#f39c12'); width = 8; secondary++; }
@@ -208,6 +203,8 @@
                     });
                 });
 
+                // Legend Update
+                document.getElementById('legend').style.display = 'block';
                 document.getElementById('legend').innerHTML = `
                     <strong>${areaName} Digital Twin</strong><br>
                     🔴 Major: ${major} | 🟠 Sec: ${secondary} | ⚫ Local: ${local}<br>
@@ -216,11 +213,10 @@
 
             } catch (err) {
                 console.error(err);
-                alert("Roads load nahi hue.");
             }
         }
 
-        // Start
+        // Start Cesium
         initCesium();
     </script>
 </body>
