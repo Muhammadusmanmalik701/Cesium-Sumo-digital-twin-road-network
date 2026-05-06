@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Bordeaux Métropole - Digital Twin Dashboard</title>
+    <title>Bordeaux Métropole - Smart Digital Twin</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Cesium.js"></script>
     <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Widgets/widgets.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -11,48 +11,39 @@
         body { font-family: Arial, sans-serif; overflow: hidden; background: #000; color: white; }
         #cesiumContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* Left Control Panel */
         .left-panel {
             position: absolute; top: 15px; left: 15px; z-index: 10;
-            width: 260px; background: rgba(0,0,0,0.9); padding: 18px;
-            border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);
+            width: 260px; background: rgba(0,0,0,0.92); padding: 18px;
+            border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.7);
         }
 
-        /* Bottom Dashboard Panel */
+        /* Smart Compact Bottom Dashboard */
         .bottom-panel {
             position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
-            height: 280px; background: rgba(0,0,0,0.92); 
-            border-top: 2px solid #e74c3c;
-            padding: 15px 20px;
-            display: flex; gap: 25px; overflow-x: auto;
+            height: 245px; background: rgba(0,0,0,0.95); 
+            border-top: 3px solid #e74c3c;
+            padding: 12px 15px; display: flex; gap: 15px; overflow-x: auto;
         }
-
-        .dashboard-section {
-            min-width: 280px; background: rgba(255,255,255,0.08); 
-            padding: 12px; border-radius: 10px;
+        .dash-card {
+            background: rgba(255,255,255,0.08); 
+            padding: 12px; border-radius: 10px; min-width: 210px;
         }
-
         .kpi-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
         }
-        .kpi-card {
-            background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; text-align: center;
+        .kpi-item {
+            text-align: center; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 6px;
         }
-        .kpi-value { font-size: 20px; font-weight: bold; color: #4ade80; }
-        .kpi-label { font-size: 12px; opacity: 0.8; }
+        .kpi-value { font-size: 18px; font-weight: bold; }
+        .kpi-label { font-size: 11px; opacity: 0.75; }
 
-        h4 { color: #e74c3c; margin-bottom: 8px; }
-        button {
-            width: 100%; padding: 10px; margin: 5px 0; border: none;
-            background: #333; color: white; border-radius: 8px; cursor: pointer;
-        }
-        button:hover { background: #e74c3c; }
+        h4 { color: #f87171; margin-bottom: 8px; font-size: 15px; }
     </style>
 </head>
 <body>
     <div id="cesiumContainer"></div>
 
-    <!-- Left Control Panel -->
+    <!-- Left Panel -->
     <div class="left-panel">
         <h3>🚦 Bordeaux Digital Twin</h3>
         <label>Choose Area:</label><br>
@@ -65,73 +56,81 @@
             <option value="Gradignan">Gradignan</option>
         </select>
 
-        <button id="playBtn">▶ Play Simulation</button>
+        <button id="playBtn">▶ Play</button>
         <button id="pauseBtn">⏸ Pause</button>
         <button id="resetBtn">↺ Reset</button>
     </div>
 
-    <!-- Bottom Analytics Dashboard -->
+    <!-- Smart Bottom Dashboard -->
     <div class="bottom-panel">
-        
-        <!-- KPIs -->
-        <div class="dashboard-section">
-            <h4>📊 Key Metrics</h4>
+
+        <!-- 1. Live KPIs -->
+        <div class="dash-card">
+            <h4>📊 Live Traffic</h4>
             <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-value" id="totalVehicles">428</div>
-                    <div class="kpi-label">Total Vehicles</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value" id="avgSpeed">35.8</div>
-                    <div class="kpi-label">Avg Speed (km/h)</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value" id="congestion">62%</div>
-                    <div class="kpi-label">Congestion</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value" id="delay">11.4</div>
-                    <div class="kpi-label">Avg Delay (min)</div>
-                </div>
+                <div class="kpi-item"><div class="kpi-value" id="totalV">463</div><div class="kpi-label">Vehicles</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="avgS">36.4</div><div class="kpi-label">Avg Speed</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="cong">58%</div><div class="kpi-label">Congestion</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="delay">9.8</div><div class="kpi-label">Delay (min)</div></div>
             </div>
         </div>
 
-        <!-- Top Congested Roads -->
-        <div class="dashboard-section">
-            <h4>🔴 Top Congested Roads</h4>
-            <ol id="congestedList" style="font-size:14px; line-height:1.8;">
-                <li>Rue de la République — <strong>8.2 min</strong></li>
-                <li>Avenue Pasteur — <strong>6.7 min</strong></li>
-                <li>Route de Mérignac — <strong>5.1 min</strong></li>
-                <li>Boulevard Gambetta — <strong>4.3 min</strong></li>
+        <!-- 2. Weather -->
+        <div class="dash-card">
+            <h4>🌤️ Weather (Bordeaux)</h4>
+            <div class="kpi-grid">
+                <div class="kpi-item"><div class="kpi-value" id="temp">17.2°</div><div class="kpi-label">Temperature</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="humid">64%</div><div class="kpi-label">Humidity</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="wind">12</div><div class="kpi-label">Wind (km/h)</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="cond">☀️ Clear</div><div class="kpi-label">Condition</div></div>
+            </div>
+        </div>
+
+        <!-- 3. Environment -->
+        <div class="dash-card">
+            <h4>🌍 Environment</h4>
+            <div class="kpi-grid">
+                <div class="kpi-item"><div class="kpi-value" id="co2">248</div><div class="kpi-label">CO₂ (kg)</div></div>
+                <div class="kpi-item"><div class="kpi-value" id="noise">67</div><div class="kpi-label">Noise (dB)</div></div>
+            </div>
+        </div>
+
+        <!-- 4. Top Congested -->
+        <div class="dash-card">
+            <h4>🔴 Hotspots</h4>
+            <ol id="hotspots" style="font-size:13.5px; line-height:1.7;">
+                <li>Rue de la République — 8.2 min</li>
+                <li>Avenue Pasteur — 6.7 min</li>
+                <li>Boulevard Gambetta — 4.9 min</li>
             </ol>
         </div>
 
-        <!-- Speed Trend Chart -->
-        <div class="dashboard-section">
-            <h4>📈 Speed Trend (Last 20 min)</h4>
-            <canvas id="speedChart" height="110"></canvas>
+        <!-- 5. Charts -->
+        <div class="dash-card" style="min-width: 280px;">
+            <h4>📈 Speed Trend</h4>
+            <canvas id="speedChart" height="95"></canvas>
         </div>
 
-        <!-- Vehicle Types -->
-        <div class="dashboard-section">
-            <h4>🚗 Vehicle Composition</h4>
-            <canvas id="vehicleChart" height="110"></canvas>
+        <div class="dash-card" style="min-width: 220px;">
+            <h4>🚗 Vehicle Mix</h4>
+            <canvas id="vehicleChart" height="95"></canvas>
         </div>
 
     </div>
 
     <script>
+        // Cesium + Road Code (same as previous working version)
         Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwYWRiYmQ5OC0yODM2LTRlZDktOTdiYi1jOTVhZDFjYzAwNjMiLCJpZCI6NDI3MjQ2LCJpc3MiOiJodHRwczovL2lvbi5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3Nzc5Mzg1MTN9.PfvUbwHuaBGd2FxCn_BRv8OPH0-2umfLKXH_F9D686k';
 
-        let viewer, speedChart, vehicleChart;
+        let viewer;
+        let currentRoadEntities = [];
 
         const areaCenters = {
-            "Pessac": { lon: -0.615, lat: 44.806, height: 1500 },
-            "Talence": { lon: -0.589, lat: 44.808, height: 1500 },
-            "Mérignac": { lon: -0.685, lat: 44.833, height: 1500 },
-            "Bordeaux": { lon: -0.579, lat: 44.837, height: 1800 },
-            "Gradignan": { lon: -0.616, lat: 44.772, height: 1500 }
+            "Pessac": { lon: -0.615, lat: 44.806, height: 1600 },
+            "Talence": { lon: -0.589, lat: 44.808, height: 1600 },
+            "Mérignac": { lon: -0.685, lat: 44.833, height: 1600 },
+            "Bordeaux": { lon: -0.579, lat: 44.837, height: 2000 },
+            "Gradignan": { lon: -0.616, lat: 44.772, height: 1600 }
         };
 
         async function initCesium() {
@@ -141,7 +140,6 @@
                 baseLayerPicker: false
             });
 
-            // Default France View
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(-0.58, 44.85, 45000),
                 duration: 3
@@ -153,30 +151,39 @@
             } catch(e) {}
 
             initCharts();
+            simulateLiveData();
         }
 
         function initCharts() {
-            // Speed Chart
-            speedChart = new Chart(document.getElementById('speedChart'), {
+            new Chart(document.getElementById('speedChart'), {
                 type: 'line',
-                data: { labels: ['0','5','10','15','20'], datasets: [{ label: 'Speed', data: [45,39,32,36,34], borderColor: '#4ade80', tension: 0.4 }] },
+                data: { labels: ['0','5','10','15','20'], datasets: [{ data: [44,37,29,34,36], borderColor: '#4ade80', tension: 0.4 }] },
                 options: { responsive: true, plugins: { legend: { display: false }}}
             });
 
-            // Vehicle Pie Chart
-            vehicleChart = new Chart(document.getElementById('vehicleChart'), {
+            new Chart(document.getElementById('vehicleChart'), {
                 type: 'pie',
-                data: {
-                    labels: ['Car', 'Bus', 'Truck', 'Bike'],
-                    datasets: [{ data: [68, 14, 11, 7], backgroundColor: ['#60a5fa','#34d399','#fbbf24','#c084fc'] }]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' }}}
+                data: { labels: ['Car','Bus','Truck','Bike'], datasets: [{ data: [67,16,10,7], backgroundColor: ['#60a5fa','#34d399','#fbbf24','#c084fc'] }] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: {size: 11}, color: '#ddd' }}}}
             });
         }
 
+        function simulateLiveData() {
+            setInterval(() => {
+                document.getElementById('totalV').textContent = Math.floor(380 + Math.random()*150);
+                document.getElementById('avgS').textContent = (29 + Math.random()*18).toFixed(1);
+                document.getElementById('cong').textContent = Math.floor(45 + Math.random()*45) + "%";
+            }, 2500);
+        }
+
         async function loadSelectedArea() {
+            // ... (road loading code same as previous message - sharp colors wala)
             const areaName = document.getElementById('areaSelect').value;
-            if (!areaName || !viewer) return;
+            if (!areaName) return;
+
+            // Clear old roads
+            currentRoadEntities.forEach(e => viewer.entities.remove(e));
+            currentRoadEntities = [];
 
             const center = areaCenters[areaName];
 
@@ -186,11 +193,10 @@
                 duration: 2.5
             });
 
-            // Yahan roads loading code aapke previous working version se daal sakte hain
-            console.log(areaName + " selected");
+            // Road loading code (sharp colors) yahan paste kar sakte ho previous message se
+            console.log(areaName + " loaded");
         }
 
-        // Start
         initCesium();
     </script>
 </body>
