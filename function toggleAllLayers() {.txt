@@ -1,0 +1,48 @@
+function toggleAllLayers() {
+            const checked = document.getElementById('chkAll').checked;
+            document.querySelectorAll('.roadChk').forEach(chk => chk.checked = checked);
+        }
+        function applyRoadFilters() {
+            closeModal();
+            const selected = new Set();
+            document.querySelectorAll('.roadChk:checked').forEach(chk => selected.add(chk.dataset.type));
+
+            allRoadEntities.forEach(entity => {
+                entity.show = selected.has(entity.roadType) || selected.has('all');
+            });
+        }
+
+        function initCharts() {
+            new Chart(document.getElementById('speedChart'), {
+                type: 'line',
+                data: { labels: ['0','5','10','15'], datasets: [{ data: [42,35,31,37], borderColor: '#4ade80', tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}}
+            });
+        }
+
+        function simulateLiveData() {
+            setInterval(() => {
+                document.getElementById('totalV').textContent = Math.floor(400 + Math.random()*120);
+                document.getElementById('avgS').textContent = (32 + Math.random()*12).toFixed(1);
+            }, 3000);
+        }
+
+        function updateTrafficFlow() {
+            const flow = Math.floor(800 + Math.random() * 900);
+            document.getElementById('flowRate').textContent = flow;
+            const status = document.getElementById('flowStatus');
+            if (flow > 1500) status.className = "flow-high", status.textContent = "Heavy Flow";
+            else if (flow > 1000) status.className = "flow-medium", status.textContent = "Medium Flow";
+            else status.className = "flow-low", status.textContent = "Smooth Flow";
+        }
+
+        async function loadLiveWeather() {
+            try {
+                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=44.8378&longitude=-0.5792&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=Europe/Paris');
+                const data = await res.json();
+                const c = data.current;
+                document.getElementById('temperature').textContent = c.temperature_2m + "°C";
+                document.getElementById('humidity').textContent = c.relative_humidity_2m + "%";
+                document.getElementById('wind').textContent = c.wind_speed_10m + " km/h";
+            } catch (e) {}
+        }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Bordeaux Métropole - Smart Digital Twin</title>
+    <title>Bordeaux Métropole - Advanced Digital Twin</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Cesium.js"></script>
     <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Widgets/widgets.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -13,22 +13,20 @@
 
         .left-panel {
             position: absolute; top: 15px; left: 15px; z-index: 10;
-            width: 260px; background: rgba(0,0,0,0.92); padding: 18px;
+            width: 280px; background: rgba(0,0,0,0.93); padding: 18px;
             border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.7);
         }
         .bottom-panel {
             position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
-            height: 245px; background: rgba(0,0,0,0.95); 
+            height: 110px; background: rgba(0,0,0,0.95); 
             border-top: 3px solid #e74c3c;
-            padding: 12px 15px; display: flex; gap: 15px; overflow-x: auto;
+            padding: 8px 12px; display: flex; gap: 12px; overflow-x: auto;
         }
         .dash-card {
-            background: rgba(255,255,255,0.08); padding: 12px; border-radius: 10px; min-width: 210px;
+            background: rgba(255,255,255,0.09); padding: 8px 12px; border-radius: 8px; 
+            min-width: 165px; font-size: 13.5px;
         }
-        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-        .kpi-item { text-align: center; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 6px; }
-        .kpi-value { font-size: 18px; font-weight: bold; color: #4ade80; }
-        h4 { color: #f87171; margin-bottom: 8px; font-size: 15px; }
+        .kpi-value { font-size: 17px; font-weight: bold; color: #4ade80; }
     </style>
 </head>
 <body>
@@ -38,7 +36,7 @@
     <div class="left-panel">
         <h3>🚦 Bordeaux Digital Twin</h3>
         <label>Choose Area:</label><br>
-        <select id="areaSelect" onchange="loadSelectedArea()" style="width:100%; padding:12px; margin:10px 0; background:#333; color:white; border:none; border-radius:8px;">
+        <select id="areaSelect" onchange="loadSelectedArea()" style="width:100%; padding:10px; margin:8px 0; background:#1f2937; color:white; border:none; border-radius:8px;">
             <option value="" selected disabled>-- Select Area --</option>
             <option value="Pessac">Pessac</option>
             <option value="Talence">Talence</option>
@@ -47,48 +45,53 @@
             <option value="Gradignan">Gradignan</option>
         </select>
 
-        <button id="playBtn">▶ Play</button>
-        <button id="pauseBtn">⏸ Pause</button>
-        <button id="resetBtn">↺ Reset</button>
+        <button onclick="showRoadLayersModal()" style="margin-top:8px; width:100%;">🛣️ Road Layers Filter</button>
+        <button onclick="loadSUMOVehicles()" style="margin-top:5px; width:100%; padding:12px; background:#22c55e;">🚗 Load SUMO Vehicles</button>
     </div>
 
-    <!-- Bottom Smart Dashboard -->
+    <!-- Bottom Dashboard -->
     <div class="bottom-panel">
         <div class="dash-card">
             <h4>📊 Live Traffic</h4>
-            <div class="kpi-grid">
-                <div class="kpi-item"><div class="kpi-value" id="totalV">463</div><div>Vehicles</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="avgS">36.4</div><div>Avg Speed</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="cong">58%</div><div>Congestion</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="delay">9.8</div><div>Delay (min)</div></div>
-            </div>
+            <span class="kpi-value" id="totalV">0</span> Vehicles<br>
+            <span class="kpi-value" id="avgS">0.0</span> km/h
         </div>
 
         <div class="dash-card">
-            <h4>🌤️ Weather</h4>
-            <div class="kpi-grid">
-                <div class="kpi-item"><div class="kpi-value" id="temp">17.2°</div><div>Temp</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="humid">64%</div><div>Humidity</div></div>
-                <div class="kpi-item"><div class="kpi-value" id="wind">12</div><div>Wind</div></div>
-            </div>
+            <h4>🌊 Traffic Flow</h4>
+            <span class="kpi-value" id="flowRate">0</span> veh/h<br>
+            <span id="flowStatus">Waiting for vehicles...</span>
         </div>
 
         <div class="dash-card">
-            <h4>📈 Speed Trend</h4>
-            <canvas id="speedChart" height="95"></canvas>
+            <h4>🌤️ Live Weather</h4>
+            <span class="kpi-value" id="temperature">17.2°C</span> <span id="condition">Sunny</span>
         </div>
+    </div>
 
-        <div class="dash-card">
-            <h4>🚗 Vehicle Mix</h4>
-            <canvas id="vehicleChart" height="95"></canvas>
+    <!-- Road Layers Modal -->
+    <div class="modal" id="roadModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:100; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:#1f2937; padding:25px; border-radius:12px; width:340px;">
+            <h3>🛣️ Road Layers Filter</h3>
+            <br>
+            <label><input type="checkbox" id="chkAll" onchange="toggleAllLayers()" checked> <strong>All Roads</strong></label><br><br>
+            
+            <label><input type="checkbox" class="roadChk" data-type="major" checked> 🔴 Major Highways</label><br>
+            <label><input type="checkbox" class="roadChk" data-type="primary" checked> 🟠 Primary Roads</label><br>
+            <label><input type="checkbox" class="roadChk" data-type="secondary" checked> 🟡 Secondary Roads</label><br>
+            <label><input type="checkbox" class="roadChk" data-type="local"> ⚪ Local Streets</label><br>
+            <label><input type="checkbox" class="roadChk" data-type="tram" checked> 🟣 Tram Lines</label><br>
+            <label><input type="checkbox" class="roadChk" data-type="rail"> 🔵 Railways</label><br><br>
+
+            <button onclick="applyRoadFilters()" style="width:100%; padding:12px; background:#e74c3c;">Apply Filters</button>
+            <button onclick="closeModal()" style="width:100%; margin-top:8px; padding:10px;">Close</button>
         </div>
     </div>
 
     <script>
         Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwYWRiYmQ5OC0yODM2LTRlZDktOTdiYi1jOTVhZDFjYzAwNjMiLCJpZCI6NDI3MjQ2LCJpc3MiOiJodHRwczovL2lvbi5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3Nzc5Mzg1MTN9.PfvUbwHuaBGd2FxCn_BRv8OPH0-2umfLKXH_F9D686k';
 
-        let viewer;
-        let currentRoadEntities = [];
+        let viewer, allRoadEntities = [], czmlDataSource = null;
 
         const areaCenters = {
             "Pessac": { lon: -0.615, lat: 44.806, height: 1600 },
@@ -102,8 +105,12 @@
             viewer = new Cesium.Viewer('cesiumContainer', {
                 terrainProvider: await Cesium.createWorldTerrainAsync(),
                 requestRenderMode: true,
-                baseLayerPicker: false
+                baseLayerPicker: false,
+                skyAtmosphere: false,
+                fog: { enabled: true, density: 0.0012 }
             });
+
+            viewer.scene.globe.enableLighting = false;
 
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(-0.58, 44.85, 45000),
@@ -117,45 +124,22 @@
 
             initCharts();
             simulateLiveData();
+            loadLiveWeather();
+            setInterval(loadLiveWeather, 300000);
         }
 
-        function initCharts() {
-            new Chart(document.getElementById('speedChart'), {
-                type: 'line',
-                data: { labels: ['0','5','10','15','20'], datasets: [{ data: [44,37,29,34,36], borderColor: '#4ade80', tension: 0.4 }] },
-                options: { responsive: true, plugins: { legend: { display: false }}}
-            });
-
-            new Chart(document.getElementById('vehicleChart'), {
-                type: 'pie',
-                data: { labels: ['Car','Bus','Truck','Bike'], datasets: [{ data: [67,16,10,7], backgroundColor: ['#60a5fa','#34d399','#fbbf24','#c084fc'] }] },
-                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#ddd', font: {size: 11}}}}}
-            });
-        }
-
-        function simulateLiveData() {
-            setInterval(() => {
-                document.getElementById('totalV').textContent = Math.floor(380 + Math.random()*180);
-                document.getElementById('avgS').textContent = (29 + Math.random()*18).toFixed(1);
-                document.getElementById('cong').textContent = Math.floor(45 + Math.random()*45) + "%";
-            }, 2500);
-        }
-
-        // ==================== MAIN ROAD LOADING FUNCTION ====================
         async function loadSelectedArea() {
             const areaName = document.getElementById('areaSelect').value;
             if (!areaName || !viewer) return;
 
-            // Clear old roads
-            currentRoadEntities.forEach(entity => viewer.entities.remove(entity));
-            currentRoadEntities = [];
+            allRoadEntities.forEach(e => viewer.entities.remove(e));
+            allRoadEntities = [];
 
             const center = areaCenters[areaName];
 
-            // Camera move
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.height),
-                orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45) },
+                orientation: { heading: 0, pitch: Cesium.Math.toRadians(-42) },
                 duration: 2.5
             });
 
@@ -166,9 +150,7 @@
 
             try {
                 const res = await fetch('https://overpass-api.de/api/interpreter', {
-                    method: 'POST',
-                    body: query,
-                    headers: { 'Content-Type': 'text/plain' }
+                    method: 'POST', body: query, headers: { 'Content-Type': 'text/plain' }
                 });
                 const data = await res.json();
 
@@ -176,56 +158,142 @@
                     if (el.type !== "way" || !el.geometry || el.geometry.length < 2) return;
 
                     const positions = el.geometry.map(g => Cesium.Cartesian3.fromDegrees(g.lon, g.lat, 8));
-
                     const highway = el.tags?.highway || "";
                     const railway = el.tags?.railway;
 
-                    let color, width = 5.5;
+                    let roadType = "local", color = Cesium.Color.GRAY, width = 5.5;
+                    if (railway === "tram") { roadType = "tram"; color = Cesium.Color.fromCssColorString('#c026d3'); width = 10; }
+                    else if (railway === "rail") { roadType = "rail"; color = Cesium.Color.fromCssColorString('#1e40af'); width = 8; }
+                    else if (["motorway","trunk"].includes(highway)) { roadType = "major"; color = Cesium.Color.fromCssColorString('#ef4444'); width = 13; }
+                    else if (["primary"].includes(highway)) { roadType = "primary"; color = Cesium.Color.fromCssColorString('#f97316'); width = 11; }
+                    else if (["secondary","tertiary"].includes(highway)) { roadType = "secondary"; color = Cesium.Color.fromCssColorString('#eab308'); width = 8.5; }
 
-                    if (railway === "tram") {
-                        color = Cesium.Color.fromCssColorString('#c026d3'); // Bright Magenta
-                        width = 10;
-                    } else if (railway === "rail") {
-                        color = Cesium.Color.fromCssColorString('#1e40af'); // Deep Blue
-                        width = 8;
-                    } else if (["motorway","trunk"].includes(highway)) {
-                        color = Cesium.Color.fromCssColorString('#ef4444'); // Bright Red
-                        width = 13;
-                    } else if (["primary"].includes(highway)) {
-                        color = Cesium.Color.fromCssColorString('#f97316'); // Orange-Red
-                        width = 11;
-                    } else if (["secondary","tertiary"].includes(highway)) {
-                        color = Cesium.Color.fromCssColorString('#eab308'); // Bright Yellow-Orange
-                        width = 8.5;
-                    } else {
-                        color = Cesium.Color.fromCssColorString('#94a3b8'); // Slate Gray
-                        width = 5;
-                    }
-
-                    const road = viewer.entities.add({
+                    const roadEntity = viewer.entities.add({
                         polyline: {
                             positions: positions,
                             width: width,
-                            material: new Cesium.PolylineGlowMaterialProperty({
-                                color: color,
-                                glowPower: 0.35
-                            }),
+                            material: new Cesium.PolylineGlowMaterialProperty({ color: color, glowPower: 0.35 }),
                             clampToGround: true
-                        }
+                        },
+                        roadType: roadType,
+                        show: true
                     });
 
-                    currentRoadEntities.push(road);
+                    allRoadEntities.push(roadEntity);
                 });
-
-                console.log(`${areaName} - Roads Loaded Successfully`);
-
-            } catch (err) {
-                console.error(err);
-                alert("Roads load nahi ho rahi. Internet check karo.");
-            }
+            } catch (err) { console.error(err); }
         }
 
-        // Start Application
+
+// ==================== LOAD SUMO VEHICLES WITH HEIGHT FIX ====================
+// ==================== IMPROVED VISIBILITY + CAMERA ====================
+// ==================== ALL CARS VISIBLE - FINAL FIX ====================
+async function loadSUMOVehicles() {
+    if (czmlDataSource) {
+        viewer.dataSources.remove(czmlDataSource);
+    }
+
+    try {
+        czmlDataSource = await Cesium.CzmlDataSource.load('./sumo_files/vehicles.czml');
+        viewer.dataSources.add(czmlDataSource);
+
+        const count = czmlDataSource.entities.values.length;
+        console.log(`✅ ${count} Vehicles Loaded`);
+
+        czmlDataSource.entities.values.forEach((entity, i) => {
+            // Big Red Point
+            entity.point = {
+                pixelSize: 26,
+                color: Cesium.Color.RED,
+                outlineColor: Cesium.Color.YELLOW,
+                outlineWidth: 4,
+                heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+            };
+
+            // Label
+            entity.label = {
+                text: `${i+1}`,
+                font: 'bold 9px Arial',
+                fillColor: Cesium.Color.YELLOW,
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 3,
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                pixelOffset: new Cesium.Cartesian2(0, -30)
+            };
+        });
+
+        // Wide view to see all cars
+        // viewer.camera.flyTo({
+        //     destination: Cesium.Cartesian3.fromDegrees(-0.60, 44.82, 3500),
+        //     orientation: { 
+        //         heading: Cesium.Math.toRadians(0), 
+        //         pitch: Cesium.Math.toRadians(-45) 
+        //     },
+        //     duration: 3
+        // });
+
+        document.getElementById('totalV').textContent = count;
+
+        alert(`✅ Sab ${count} Vehicles Load ho gaye!\nRed dots + numbers dikh rahe hain.`);
+
+    } catch (e) {
+        console.error(e);
+        alert("CZML load failed");
+    }
+}
+// ==================== END LOAD SUMO VEHICLES WITH VISIBILITY FIX ====================
+        // Road Filter Functions
+        function showRoadLayersModal() { document.getElementById('roadModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('roadModal').style.display = 'none'; }
+        function toggleAllLayers() {
+            const checked = document.getElementById('chkAll').checked;
+            document.querySelectorAll('.roadChk').forEach(chk => chk.checked = checked);
+        }
+        function applyRoadFilters() {
+            closeModal();
+            const selected = new Set();
+            document.querySelectorAll('.roadChk:checked').forEach(chk => selected.add(chk.dataset.type));
+            allRoadEntities.forEach(entity => {
+                entity.show = selected.has(entity.roadType) || selected.has('all');
+            });
+        }
+
+        function initCharts() {
+            new Chart(document.getElementById('speedChart'), {
+                type: 'line',
+                data: { labels: ['0','5','10','15'], datasets: [{ data: [42,35,31,37], borderColor: '#4ade80', tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}}
+            });
+        }
+
+        function simulateLiveData() {
+            setInterval(() => {
+                if (!czmlDataSource) return;
+                document.getElementById('totalV').textContent = Math.floor(400 + Math.random()*120);
+                document.getElementById('avgS').textContent = (32 + Math.random()*12).toFixed(1);
+            }, 3000);
+        }
+
+        function updateTrafficFlow() {
+            const flow = Math.floor(800 + Math.random() * 900);
+            document.getElementById('flowRate').textContent = flow;
+            const status = document.getElementById('flowStatus');
+            if (flow > 1500) status.className = "flow-high", status.textContent = "Heavy Flow";
+            else if (flow > 1000) status.className = "flow-medium", status.textContent = "Medium Flow";
+            else status.className = "flow-low", status.textContent = "Smooth Flow";
+        }
+
+        async function loadLiveWeather() {
+            try {
+                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=44.8378&longitude=-0.5792&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=Europe/Paris');
+                const data = await res.json();
+                const c = data.current;
+                document.getElementById('temperature').textContent = c.temperature_2m + "°C";
+                document.getElementById('humidity').textContent = c.relative_humidity_2m + "%";
+                document.getElementById('wind').textContent = c.wind_speed_10m + " km/h";
+            } catch (e) {}
+        }
+
         initCesium();
     </script>
 </body>
