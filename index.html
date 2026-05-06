@@ -113,7 +113,6 @@
                 duration: 3
             });
 
-            // Buildings
             try {
                 const buildings = await Cesium.createOsmBuildingsAsync();
                 viewer.scene.primitives.add(buildings);
@@ -199,12 +198,7 @@
 
                     currentRoadEntities.push(roadEntity);
 
-                    // Click Event - Info Popup
-                    roadEntity.description = `
-                        <h3>${name}</h3>
-                        <p><strong>Type:</strong> ${highway || railway || 'Local Street'}</p>
-                        <p><strong>Status:</strong> Normal Traffic</p>
-                    `;
+                    roadEntity.description = `<h3>${name}</h3><p><strong>Type:</strong> ${highway || railway || 'Local'}</p>`;
                 });
 
             } catch (err) {
@@ -214,8 +208,13 @@
 
         function toggleNightMode() {
             nightMode = !nightMode;
-            viewer.scene.globe.enableLighting = nightMode;
-            alert(nightMode ? "🌙 Night Mode Activated" : "☀️ Day Mode Activated");
+            if (nightMode) {
+                viewer.scene.globe.enableLighting = true;
+                viewer.scene.fog.density = 0.0025;
+            } else {
+                viewer.scene.globe.enableLighting = false;
+                viewer.scene.fog.density = 0.001;
+            }
         }
 
         function toggleRoads() {
@@ -224,10 +223,9 @@
         }
 
         function toggleBuildings() {
-            alert("Buildings visibility toggled (Advanced version coming soon)");
+            alert("🏢 Buildings toggle (full implementation coming soon)");
         }
 
-        // Start
         initCesium();
     </script>
 </body>
