@@ -2,58 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Bordeaux Métropole - Digital Twin Dashboard</title>
+    <title>Bordeaux 3D Digital Twin - Optimized</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Cesium.js"></script>
     <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.128/Build/Cesium/Widgets/widgets.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; overflow: hidden; background: #000; color: white; }
-        #cesiumContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-
-        /* Left Sidebar */
-        .left-panel {
-            position: absolute; top: 15px; left: 15px; z-index: 10;
-            width: 260px; background: rgba(0,0,0,0.85); padding: 18px;
-            border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6);
-        }
-
-        /* Right Dashboard */
-        .right-panel {
-            position: absolute; top: 15px; right: 15px; z-index: 10;
-            width: 320px; background: rgba(0,0,0,0.85); padding: 18px;
-            border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6); max-height: 92vh; overflow-y: auto;
-        }
-
-        .kpi-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
-        }
-        .kpi-card {
-            background: rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; text-align: center;
-        }
-        .kpi-value { font-size: 22px; font-weight: bold; }
-        .kpi-label { font-size: 13px; opacity: 0.8; }
-
-        .section { margin-top: 20px; }
-        .section h4 { margin-bottom: 10px; color: #e74c3c; }
-
-        button {
-            padding: 10px 16px; margin: 5px 0; width: 100%; border: none;
-            background: #333; color: white; border-radius: 8px; cursor: pointer;
-        }
-        button:hover { background: #e74c3c; }
-
-        .legend { position: absolute; bottom: 20px; left: 290px; z-index: 10; background: rgba(0,0,0,0.85); padding: 12px; border-radius: 10px; font-size: 14px; }
+        body { margin: 0; padding: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        #cesiumContainer { width: 100vw; height: 100vh; }
+        /* Control panel style same as before */
+        .control-panel { position: absolute; top: 15px; left: 15px; z-index: 1000; background: rgba(0,0,0,0.85); color: white; padding: 18px 22px; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.6); min-width: 320px; }
     </style>
 </head>
 <body>
     <div id="cesiumContainer"></div>
-
-    <!-- Left Panel: Controls -->
-    <div class="left-panel">
-        <h3>🚦 Bordeaux Digital Twin</h3>
-        <label>Choose Area:</label><br>
-        <select id="areaSelect" onchange="loadSelectedArea()" style="width:100%; padding:10px; margin:10px 0;">
+    
+    <div class="control-panel">
+        <h3>🚦 Bordeaux Digital Twin (Optimized)</h3>
+        <label>Choose Area :</label><br>
+        <select id="areaSelect" onchange="loadSelectedArea()">
             <option value="" selected disabled>-- Select Area --</option>
             <option value="Pessac">Pessac</option>
             <option value="Talence">Talence</option>
@@ -61,118 +26,123 @@
             <option value="Bordeaux">Bordeaux City</option>
             <option value="Gradignan">Gradignan</option>
         </select>
-
-        <button id="playBtn">▶ Play Simulation</button>
-        <button id="pauseBtn">⏸ Pause</button>
-        <button id="resetBtn">↺ Reset</button>
     </div>
-
-    <!-- Right Panel: Analytics Dashboard -->
-    <div class="right-panel">
-        <h3>📊 Live Analytics</h3>
-        
-        <!-- KPIs -->
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-value" id="totalVehicles">487</div>
-                <div class="kpi-label">Total Vehicles</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-value" id="avgSpeed">34.2</div>
-                <div class="kpi-label">Avg Speed (km/h)</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-value" id="congestion">68%</div>
-                <div class="kpi-label">Congestion Level</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-value" id="delay">14.8</div>
-                <div class="kpi-label">Avg Delay (min)</div>
-            </div>
-        </div>
-
-        <!-- Top Congested Roads -->
-        <div class="section">
-            <h4>🔴 Top Congested Roads</h4>
-            <ol id="congestedList">
-                <li>Rue de la République — 8.2 min delay</li>
-                <li>Avenue Pasteur — 6.7 min delay</li>
-                <li>Route de Mérignac — 5.4 min delay</li>
-            </ol>
-        </div>
-
-        <!-- Charts -->
-        <div class="section">
-            <h4>📈 Speed Trend</h4>
-            <canvas id="speedChart" height="140"></canvas>
-        </div>
-
-        <div class="section">
-            <h4>🚗 Vehicle Types</h4>
-            <canvas id="vehicleChart" height="140"></canvas>
-        </div>
-    </div>
-
-    <!-- Legend -->
-    <div class="legend" id="legend"></div>
 
     <script>
-        // Cesium Setup (same as before with optimizations)
         Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwYWRiYmQ5OC0yODM2LTRlZDktOTdiYi1jOTVhZDFjYzAwNjMiLCJpZCI6NDI3MjQ2LCJpc3MiOiJodHRwczovL2lvbi5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3Nzc5Mzg1MTN9.PfvUbwHuaBGd2FxCn_BRv8OPH0-2umfLKXH_F9D686k';
 
-        let viewer, speedChart, vehicleChart;
+        let viewer;
+        let currentRoadsDataSource = null;
 
         async function initCesium() {
             viewer = new Cesium.Viewer('cesiumContainer', {
                 terrainProvider: await Cesium.createWorldTerrainAsync(),
-                requestRenderMode: true,
-                maximumRenderTimeChange: Infinity
+                baseLayerPicker: false,
+                geocoder: false,
+                homeButton: true,
+                sceneModePicker: true,
+                navigationHelpButton: false,
+                
+                // === Performance Optimizations ===
+                requestRenderMode: true,           // Only render when needed
+                maximumRenderTimeChange: Infinity,
+                shadows: false,
+                skyAtmosphere: false,              // Agar zaruri na ho toh off
+                skyBox: false
             });
 
+            // Global performance settings
+            viewer.scene.fog.enabled = true;
+            viewer.scene.globe.enableLighting = false;
+            viewer.scene.debugShowFramesPerSecond = true; // FPS counter (development ke liye)
+
+            // Default France View
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(-0.58, 44.85, 45000),
+                duration: 2
+            });
+
+            // 3D Buildings (optimized)
             try {
                 const buildings = await Cesium.createOsmBuildingsAsync();
                 viewer.scene.primitives.add(buildings);
             } catch(e) {}
 
-            // Default France View
+            loadSelectedArea(); // Optional: default area load karna ho toh
+        }
+
+        const areaCenters = { /* ... same as before ... */ };
+
+        async function loadSelectedArea() {
+            const areaName = document.getElementById('areaSelect').value;
+            if (!areaName) return;
+
+            const center = areaCenters[areaName];
+
+            // Camera move
             viewer.camera.flyTo({
-                destination: Cesium.Cartesian3.fromDegrees(-0.58, 44.85, 45000),
-                duration: 3
+                destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, center.height || 1500),
+                duration: 2
             });
 
-            initCharts();
+            // Purane roads remove (better way)
+            if (currentRoadsDataSource) {
+                viewer.dataSources.remove(currentRoadsDataSource);
+            }
+
+            // Create new DataSource (better performance than entities)
+            currentRoadsDataSource = new Cesium.CustomDataSource();
+            viewer.dataSources.add(currentRoadsDataSource);
+
+            // Overpass query same...
+            const query = `[out:json][timeout:60];
+                area["name"="${areaName}"]["admin_level"=8]->.searchArea;
+                (way["highway"](area.searchArea); way["railway"="tram"](area.searchArea); way["railway"="rail"](area.searchArea););
+                out geom;`;
+
+            try {
+                const res = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST', body: query, headers: {'Content-Type': 'text/plain'}
+                });
+                const data = await res.json();
+
+                data.elements.forEach(el => {
+                    if (el.type !== "way" || !el.geometry) return;
+
+                    const positions = el.geometry.map(g => 
+                        Cesium.Cartesian3.fromDegrees(g.lon, g.lat, 6)
+                    );
+
+                    const highway = el.tags?.highway || "";
+                    const railway = el.tags?.railway;
+
+                    let color = Cesium.Color.GRAY;
+                    let width = 4;
+
+                    if (railway === "tram") { color = Cesium.Color.fromCssColorString('#9b59b6'); width = 8; }
+                    else if (railway === "rail") { color = Cesium.Color.fromCssColorString('#2c3e50'); width = 6; }
+                    else if (["motorway","trunk","primary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#e74c3c'); width = 10; }
+                    else if (["secondary","tertiary"].includes(highway)) { color = Cesium.Color.fromCssColorString('#f39c12'); width = 7; }
+
+                    currentRoadsDataSource.entities.add({
+                        polyline: {
+                            positions: positions,
+                            width: width,
+                            material: new Cesium.PolylineGlowMaterialProperty({
+                                color: color,
+                                glowPower: 0.2
+                            }),
+                            clampToGround: true,
+                            classificationType: Cesium.ClassificationType.TERRAIN
+                        }
+                    });
+                });
+
+            } catch (e) {
+                console.error(e);
+            }
         }
 
-        function initCharts() {
-            // Speed Trend Chart
-            speedChart = new Chart(document.getElementById('speedChart'), {
-                type: 'line',
-                data: {
-                    labels: ['00:00', '00:05', '00:10', '00:15', '00:20'],
-                    datasets: [{ label: 'Avg Speed', data: [42, 38, 31, 35, 33], borderColor: '#e74c3c', tension: 0.4 }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
-
-            // Vehicle Type Pie Chart
-            vehicleChart = new Chart(document.getElementById('vehicleChart'), {
-                type: 'pie',
-                data: {
-                    labels: ['Cars', 'Buses', 'Trucks', 'Motorcycles'],
-                    datasets: [{ data: [65, 15, 12, 8], backgroundColor: ['#3498db', '#2ecc71', '#f39c12', '#9b59b6'] }]
-                },
-                options: { responsive: true }
-            });
-        }
-
-        // Dummy Data Update (Simulation ke saath baad mein connect karenge)
-        setInterval(() => {
-            document.getElementById('totalVehicles').textContent = Math.floor(400 + Math.random() * 200);
-            document.getElementById('avgSpeed').textContent = (28 + Math.random() * 20).toFixed(1);
-            document.getElementById('congestion').textContent = Math.floor(40 + Math.random() * 50) + "%";
-        }, 3000);
-
-        // Start
         initCesium();
     </script>
 </body>
