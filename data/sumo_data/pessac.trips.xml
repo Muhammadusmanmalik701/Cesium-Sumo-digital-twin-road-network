@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-05-04T23:17:19.515631+01:00 by Eclipse SUMO duarouter 1.26.0
+<duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="pessac.net.xml"/>
+        <route-files value="pessac.trips.xml"/>
+    </input>
+
+    <output>
+        <output-file value="pessac.trips.xml.tmp"/>
+        <alternatives-output value="NUL"/>
+        <write-trips value="true"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+        <end value="3600.0"/>
+    </time>
+
+    <report>
+        <no-warnings value="true"/>
+        <ignore-errors value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+</duarouterConfiguration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <trip id="107" depart="642.00" from="26140836#0" to="-285795313#0"/>
+    <trip id="109" depart="654.00" from="24822950#1" to="25722979#3"/>
+    <trip id="139" depart="834.00" from="25722979#2" to="1067550141"/>
+    <trip id="301" depart="1806.00" from="27485144#1" to="60266198#0"/>
+    <trip id="531" depart="3186.00" from="581243749#1" to="-1204633101#0"/>
+</routes>
